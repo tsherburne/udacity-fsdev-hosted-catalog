@@ -1,50 +1,51 @@
-## Wood Products Catalog
-This respository is for project #4 (Catalog DB with data-driven Web UI) 
+## AWS Lightsail Hosting for: Wood Products Catalog
+This respository is for project #6 (Linux Hosting) 
 for the [Udacity Fullstack Developers Nano Degree](https://www.udacity.com/course/full-stack-web-developer-nanodegree--nd004).
+
+This project is a clone of [project #4](https://github.com/tsherburne/udacity-fsdev-catalog) with some path name fixes to support the Apache hosting environment.
+
 ### Table of Contents
 
-* [Installation](#installation)
-* [Setup](#setup)
-* [Running](#running)
+* [Lighsail Setup](#lightsail-setup)
+* [Server Access](#server-access)
 
-### Installation
-Clone the respository:
-
+### Lightsail Setup
+The following packages were installed on the Ubuntu [AWS Lightsail](https://aws.amazon.com/lightsail/) server:
 ```
-https://github.com/tsherburne/udacity-fsdev-catalog.git
-cd udacity-fsdev-catalog
-```
+sudo apt-get install apache2
+sudo apt-get install libapache2-mod-wsgi
 
-### Setup
-Initalize and populate the sample database.
-```
-python db_setup.py
-phthon populate_db.py
-```
-Using Google Developer Account, enable a test project and create account credentials.
-https://console.developers.google.com/
+sudo apt install phthon-pip
+sudo apt install sqlite
+sudo pip install Flask
+sudo pip install SQLAlchemy
 
-The `client_secrets.json` needs to be downloaded from Google and stored in the same directory as the `server.py` to enable Google Authentication
-
-The OAuth authentication flow in this project leverages the Google Python Tutorial.
-See: https://developers.google.com/identity/protocols/OAuth2WebServer
-
-By default the Web Server listens on port 8080.  If desired, the port can be updated in `server.py`
-### Running
-
-Start the Web Server:
+sudo pip install google-api-python-client
+sudo pip install google-auth
+sudo pip install google-auth-oauthlib 
+sudo pip install google-auth-httplib2
 ```
-python server.py
+The apache server was configured to lauch the Python catalog application with the following:
 ```
+/var/www/html/catalog.wsgi
+```
+```
+import sys
+sys.path.insert(0, '/home/ubuntu/website/udacity-fsdev-hosted-catalog/')
 
-Open a browser and to view and update the Wood Products Catalog!
+from server import app as application
 ```
-https://<host>:8080
+```
+/etc/apache2/sites-enabled/000-default.conf
+```
+```
+WSGIDaemonProcess catalog user=ubuntu group=ubuntu threads=5
+WSGIScriptAlias / /var/www/html/catalog.wsg
 ```
 
-The Catalog can be browsed without logging in, but modification (Create / Update / Delete) of an item requires login. Buttons in the right hand corner of the header provide login / logout functions. Additionally, only the user who creates an item can later update or delete that item.
-
-A JSON endpoint is provided to retrive an item from the catalog.
+### Server Access
+The URL for the catalog db application is:
 ```
-https://<host>:8080/api/item/<item_id>/JSON
+http://ec2-52-1-33-79.compute-1.amazonaws.com/
 ```
+SSH is enabled on port 2200 for the 'grader' user.  The server IP: 52.1.33.79
