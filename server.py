@@ -12,6 +12,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 from oauth2client.client import AccessTokenCredentials
+import sys
 
 def db_connect() :
     # Connect to the data dand create a session
@@ -23,7 +24,7 @@ def db_connect() :
 
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
-CLIENT_SECRETS_FILE = "client_secrets.json"
+CLIENT_SECRETS_FILE = "/home/ubuntu/website/udacity-fsdev-hosted-catalog/client_secrets.json"
 SCOPES = ['openid']
 
 
@@ -42,8 +43,10 @@ def apiItemJSON(item_id):
     session = db_connect()
     try:
         item = session.query(Item).filter_by(id=item_id).one()
+        session.close()
         return jsonify(Item=item.serialize)
     except exc.DatabaseError:
+        session.close()
         return("Item not found!")
 
 
@@ -99,7 +102,7 @@ def oauth2callback():
     # Store username and google_id
     flask.session['username'] = data['name']
     flask.session['google_id'] = data['id']
-    print flask.session['username'] + ": " + flask.session['google_id']
+    sys.stderr.write(flask.session['username'] + ": " + flask.session['google_id'])
 
     # Check if user exists
     session = db_connect()
@@ -127,6 +130,7 @@ def oauth2callback():
         flask.session['user_id'] = user.id
         flash('Existing: User Logged In')
 
+    session.close()
     return flask.redirect(flask.url_for('routeCatalog'))
 
 
@@ -182,9 +186,11 @@ def updateItem(item_id):
                 flash('Item Updated')
             else:
                 flash('Only owner can update item.')
+            session.close()
             return redirect(url_for('editItem', mode="e", item_id=item.id))
         except exc.DatabaseError:
             flash('Item not found')
+            session.close()
             return redirect(url_for('routeCatalog'))
     else:
         return redirect(url_for('routeCatalog'))
@@ -205,8 +211,10 @@ def deleteItem(item_id):
                 flash('Item deleted')
             else:
                 flash('Only owner can delete item.')
+            session.close()
         except exc.DatabaseError:
             flash('Item not found')
+            session.close()
     return redirect(url_for('routeCatalog'))
 
 
@@ -225,8 +233,10 @@ def createItem():
 
             session.add(item)
             session.commit()
+            session.close()
             flash('Item Created')
         except exc.DatabaseError:
+            session.close()
             flash('Create failed')
 
     return redirect(url_for('routeCatalog'))
@@ -243,7 +253,9 @@ def editItem(mode, item_id):
             session = db_connect()
 
             item = session.query(Item).filter_by(id=item_id).one()
+            session.close()
         except exc.DatabaseError:
+            session.close()
             return redirect(url_for('routeCatalog'))
     else:
         item = None
@@ -263,6 +275,7 @@ def showCatalog(category_id):
     else:
         if 'sel_cat' in login_session:
             del login_session['sel_cat']
+        session.close()
         return redirect(url_for('routeCatalog'))
 
     categories = session.query(Category).order_by(asc(Category.name))
@@ -270,6 +283,7 @@ def showCatalog(category_id):
     items = session.query(Item).filter_by(category_id=category_id).\
         order_by(asc(Item.name)).all()
 
+    session.close()
     return render_template('catalog.html', categories=categories, items=items)
 
 
@@ -280,6 +294,7 @@ def routeCatalog():
 
     category = session.query(Category).order_by(asc(Category.name)).first()
     category_id = category.id
+    session.close()
     return redirect(url_for('showCatalog', category_id=category_id))
 
 
