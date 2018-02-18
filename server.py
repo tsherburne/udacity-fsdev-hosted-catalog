@@ -15,7 +15,7 @@ from oauth2client.client import AccessTokenCredentials
 import sys
 
 def db_connect() :
-    # Connect to the data dand create a session
+    # Connect to the data and create a session
     engine = create_engine('sqlite:////home/ubuntu/website/udacity-fsdev-hosted-catalog/catalog.db')
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
@@ -102,7 +102,8 @@ def oauth2callback():
     # Store username and google_id
     flask.session['username'] = data['name']
     flask.session['google_id'] = data['id']
-    sys.stderr.write(flask.session['username'] + ": " + flask.session['google_id'])
+    #sys.stderr.write(flask.session['username'] + ": " + 
+    #                 flask.session['google_id'])
 
     # Check if user exists
     session = db_connect()
@@ -157,7 +158,8 @@ def clear_credentials():
                                'application/x-www-form-urlencoded'})
 
         del flask.session['credentials']
-        del flask.session['user_id']
+        if 'user_id' in flask.session:
+            del flask.session['user_id']
 
     flash('User Logged Out')
     return redirect(url_for('routeCatalog'))
@@ -173,7 +175,6 @@ def updateItem(item_id):
 
             item = session.query(Item).filter_by(id=item_id).one()
             # Verify logged in user is owner of item
-
             if item.user_id == login_session['user_id']:
                 if request.form['name']:
                     item.name = request.form['name']
@@ -187,7 +188,7 @@ def updateItem(item_id):
             else:
                 flash('Only owner can update item.')
             session.close()
-            return redirect(url_for('editItem', mode="e", item_id=item.id))
+            return redirect(url_for('editItem', mode="e", item_id=item_id))
         except exc.DatabaseError:
             flash('Item not found')
             session.close()
@@ -299,6 +300,5 @@ def routeCatalog():
 
 
 if __name__ == '__main__':
-
     app.debug = True
     app.run(host='0.0.0.0', port=8080)
