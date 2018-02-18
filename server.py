@@ -124,7 +124,8 @@ def oauth2callback():
             flask.session['user_id'] = user.id
 
             flash('New: User Logged In')
-        except exc.DatabaseError:
+       except exc.DatabaseError as error:
+            sys.stderr.write("\nDatabase Exception: " + str(error) + "\n")
             flash('New User Create failed')
 
     else:
