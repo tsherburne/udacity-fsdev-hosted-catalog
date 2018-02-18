@@ -61,7 +61,7 @@ class Item(Base):
         }
 
 
-engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('sqlite:////home/ubuntu/website/udacity-fsdev-hosted-catalog/catalog.db')
 
 
 Base.metadata.create_all(engine)

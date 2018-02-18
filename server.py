@@ -13,12 +13,13 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 from oauth2client.client import AccessTokenCredentials
 
-
-# Connect to the database and create a session
-engine = create_engine('sqlite:///catalog.db')
-Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
+def db_connect() :
+    # Connect to the data dand create a session
+    engine = create_engine('sqlite:////home/ubuntu/website/udacity-fsdev-hosted-catalog/catalog.db')
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    return session
 
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
@@ -27,11 +28,18 @@ SCOPES = ['openid']
 
 
 app = Flask(__name__)
+# When running locally, disable OAuthlib's HTTPs verification.
+# ACTION ITEM for developers:
+# When running in production *do not* leave this option enabled.
+
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+app.secret_key = 'super_secret_key'
 
 
 # JSON api endpoint
 @app.route('/api/item/<int:item_id>/JSON')
 def apiItemJSON(item_id):
+    session = db_connect()
     try:
         item = session.query(Item).filter_by(id=item_id).one()
         return jsonify(Item=item.serialize)
@@ -94,6 +102,8 @@ def oauth2callback():
     print flask.session['username'] + ": " + flask.session['google_id']
 
     # Check if user exists
+    session = db_connect()
+
     user = session.query(User).filter_by(google_id=data['id']).one_or_none()
     if user is None:
         # Add User to Database
@@ -155,6 +165,8 @@ def updateItem(item_id):
     if 'credentials' in flask.session:
 
         try:
+            session = db_connect()
+
             item = session.query(Item).filter_by(id=item_id).one()
             # Verify logged in user is owner of item
 
@@ -183,6 +195,8 @@ def updateItem(item_id):
 def deleteItem(item_id):
     if 'credentials' in flask.session:
         try:
+            session = db_connect()
+
             item = session.query(Item).filter_by(id=item_id).one()
             # Verify logged in user is owner of item
             if item.user_id == login_session['user_id']:
@@ -202,6 +216,8 @@ def createItem():
     if 'credentials' in flask.session:
 
         try:
+            session = db_connect()
+
             item = Item(name=request.form['name'],
                         description=request.form['description'],
                         category_id=request.form['category'],
@@ -224,6 +240,8 @@ def editItem(mode, item_id):
 
     if mode == "e":
         try:
+            session = db_connect()
+
             item = session.query(Item).filter_by(id=item_id).one()
         except exc.DatabaseError:
             return redirect(url_for('routeCatalog'))
@@ -236,6 +254,7 @@ def editItem(mode, item_id):
 # Show catalog and item list for selected category
 @app.route('/catalog/<int:category_id>/')
 def showCatalog(category_id):
+    session = db_connect()
 
     sel_cat = session.query(Category).filter_by(id=category_id).one_or_none()
 
@@ -257,17 +276,14 @@ def showCatalog(category_id):
 # Redirect to catalog, showing item list for 'first' catalog entry
 @app.route('/')
 def routeCatalog():
+    session = db_connect()
+
     category = session.query(Category).order_by(asc(Category.name)).first()
     category_id = category.id
     return redirect(url_for('showCatalog', category_id=category_id))
 
 
 if __name__ == '__main__':
-    # When running locally, disable OAuthlib's HTTPs verification.
-    # ACTION ITEM for developers:
-    #     When running in production *do not* leave this option enabled.
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-    app.secret_key = 'super_secret_key'
     app.debug = True
     app.run(host='0.0.0.0', port=8080)
